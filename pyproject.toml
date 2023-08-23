@@ -13,6 +13,7 @@ pandas = "^2.0.3"
 ipykernel = "^6.25.1"
 imageio = "^2.31.1"
 future = "^0.18.3"
+sympy = "^1.12"
 
 
 [build-system]
