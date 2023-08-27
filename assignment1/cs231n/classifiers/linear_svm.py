@@ -37,13 +37,17 @@ def svm_loss_naive(W, X, y, reg):
             margin = scores[j] - correct_class_score + 1  # note delta = 1
             if margin > 0:
                 loss += margin
+                dW[:,j] += X[i]
+                dW[:,y[i]] -= X[i]
 
     # Right now the loss is a sum over all training examples, but we want it
     # to be an average instead so we divide by num_train.
     loss /= num_train
+    dW /= num_train
 
     # Add regularization to the loss.
     loss += reg * np.sum(W * W)
+    dW += 2 * reg * W
 
     #############################################################################
     # TODO:                                                                     #
@@ -78,7 +82,29 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    ############
+    # readable #
+    ############
+
+    # N = X.shape[0]
+    # score = X @ W
+    # correct_score = score[np.arange(N), y]
+    # loss_matrix_before_max = score - correct_score[:,np.newaxis] + 1
+    # loss_matrix = np.maximum(0, loss_matrix_before_max)
+    # data_loss = 1/N * np.sum( loss_matrix) - 1 
+    # reg_loss = reg * np.sum(W*W)
+    # loss = data_loss + reg_loss
+
+    #############
+    # for speed #
+    #############
+
+    N = X.shape[0]
+    score = X @ W
+    loss_matrix = np.maximum(0,score.T - score[np.arange(N), y] + 1).T
+    loss = 1/N * np.sum(loss_matrix) -1 + reg * np.sum(W*W)
+
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -93,7 +119,43 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    ############
+    # readable #
+    ############
+
+    # # backprop loss
+    # dloss = 1
+    # # backprop loss = data_loss + reg_loss
+    # ddata_loss = (1) * dloss
+    # dreg_loss = (1) * dloss
+    # # backprop reg_loss = reg * np.sum(W*W) 
+    # dW += (2 * reg * W) * dreg_loss
+    # # backprop data_loss = 1/N * np.sum(loss_matrix) - 1
+    # # loss_matrix N * C, W: D * C
+    # dloss_matrix = (1/N) * ddata_loss
+    # # backprop loss_matrix = np.maimum(0, loss_matrix_before_max)
+    # loss_matrix[loss_matrix>0] = 1
+    # dloss_matrix_before_max = (loss_matrix) * dloss_matrix
+    # # backprop loss_matrix_before_max = score - correct_score[:,np.newaxis] + 1 
+    # dscore = (1) * dloss_matrix_before_max
+    # dcorrect_score = (-1) * np.sum(dloss_matrix_before_max, axis=1) 
+    # # backprop score = X @ W
+    # dW += X.T @ dscore
+    # # backprop correct_score = score[np.arange(N), y]
+    # dscore2 = np.zeros(score.shape)
+    # dscore2[np.arange(N), y] = dcorrect_score
+    # # backprop score2 = X @ W
+    # dW += X.T @ dscore2
+
+    #############
+    # for speed #
+    #############
+
+    dW += 2 * reg * W
+    loss_matrix[loss_matrix>0] = 1/N
+    loss_matrix[np.arange(N), y] -= np.sum(loss_matrix, axis=1)
+    dW += X.T @ loss_matrix
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
